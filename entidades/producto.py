@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from entidades.base import Base
+from excepciones import DatoInvalidoError, OperacionNoPermitidaError, PrecioInvalidoError
 
 if TYPE_CHECKING:
     from entidades.categoria import Categoria
@@ -38,8 +39,9 @@ class Producto(Base):
 
     @nombre.setter
     def nombre(self, valor: str) -> None:
-        # TODO [B] HU-PROD-02: validar texto no vacio -> DatoInvalidoError
-        self.__nombre = valor
+        if not isinstance(valor, str) or not valor.strip():
+            raise DatoInvalidoError("El nombre del producto no puede estar vacío")
+        self.__nombre = valor.strip()
 
     @property
     def precio(self) -> float:
@@ -47,8 +49,11 @@ class Producto(Base):
 
     @precio.setter
     def precio(self, valor: float) -> None:
-        # TODO [B] HU-PROD-02: validar precio >= 0 -> PrecioInvalidoError
-        self.__precio = valor
+        if isinstance(valor, bool) or not isinstance(valor, (int, float)):
+            raise PrecioInvalidoError("El precio debe ser un número")
+        if valor < 0:
+            raise PrecioInvalidoError("El precio no puede ser negativo")
+        self.__precio = float(valor)
 
     @property
     def descripcion(self) -> str:
@@ -64,7 +69,10 @@ class Producto(Base):
 
     @stock.setter
     def stock(self, valor: int) -> None:
-        # TODO [B] HU-PROD-02: validar stock >= 0 -> DatoInvalidoError
+        if isinstance(valor, bool) or not isinstance(valor, int):
+            raise DatoInvalidoError("El stock debe ser un número entero")
+        if valor < 0:
+            raise DatoInvalidoError("El stock no puede ser negativo")
         self.__stock = valor
 
     @property
@@ -89,8 +97,10 @@ class Producto(Base):
 
     @categoria.setter
     def categoria(self, valor: Categoria) -> None:
-        # TODO [B] HU-PROD-02: validar categoria no eliminada -> OperacionNoPermitidaError
-        # Mantiene sincronizada la agregacion en ambos sentidos (auxiliar, ya resuelto)
+        if valor is None:
+            raise DatoInvalidoError("El producto debe tener una categoría")
+        if valor.eliminado:
+            raise OperacionNoPermitidaError("No se puede asignar una categoría eliminada")
         if self.__categoria is not None:
             self.__categoria.quitar_producto(self)
         self.__categoria = valor
