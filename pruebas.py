@@ -92,12 +92,19 @@ def main() -> None:
     # ==================================================================
     seccion("1. Categorias [A]")
     s = nuevo_entorno()
+    pizzas = s.categorias.listar_activos()[0]
     probar("Crear categoria valida", lambda: s.categorias.crear("Empanadas", "Al horno"))
-    # TODO [A] agregar casos:
-    #  - nombre repetido (sin distinguir mayusculas)      -> DuplicadoError
-    #  - nombre vacio                                      -> DatoInvalidoError
-    #  - editar id inexistente                             -> EntidadNoEncontradaError
-    #  - eliminar categoria con productos activos          -> OperacionNoPermitidaError
+    probar("Nombre repetido (otra capitalizacion)", lambda: s.categorias.crear("  PIZZAS ", "Otra"), DuplicadoError)
+    probar("Nombre vacio", lambda: s.categorias.crear("   ", "Sin nombre"), DatoInvalidoError)
+    probar("Descripcion vacia", lambda: s.categorias.crear("Postres", ""), DatoInvalidoError)
+    probar("Editar id inexistente", lambda: s.categorias.editar(999, "X", None), EntidadNoEncontradaError)
+    probar("Editar a su mismo nombre en otra capitalizacion", lambda: afirmar(s.categorias.editar(pizzas.id, "PIZZAS", None).nombre == "PIZZAS"))
+    probar("Editar a un nombre ajeno", lambda: s.categorias.editar(pizzas.id, "empanadas", None), DuplicadoError)
+    probar("Editar conservando valores (None)", lambda: afirmar(s.categorias.editar(pizzas.id, None, None).descripcion == "A la piedra"))
+    probar("Eliminar categoria con productos activos", lambda: s.categorias.eliminar(pizzas.id), OperacionNoPermitidaError)
+    empanadas = s.categorias.listar_activos()[1]
+    probar("Eliminar categoria sin productos", lambda: s.categorias.eliminar(empanadas.id))
+    probar("Nombre de categoria eliminada se puede reusar", lambda: s.categorias.crear("Empanadas", "De carne"))
 
     seccion("2. Usuarios y login [A]")
     s = nuevo_entorno()

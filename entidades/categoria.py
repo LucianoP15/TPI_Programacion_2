@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from entidades.base import Base
+from excepciones import DatoInvalidoError
 
 if TYPE_CHECKING:
     from entidades.producto import Producto
@@ -24,8 +25,9 @@ class Categoria(Base):
 
     @nombre.setter
     def nombre(self, valor: str) -> None:
-        # TODO [A] HU-CAT-02: validar texto no vacio -> DatoInvalidoError
-        self.__nombre = valor
+        if not isinstance(valor, str) or not valor.strip():
+            raise DatoInvalidoError("El nombre de la categoría no puede estar vacío")
+        self.__nombre = valor.strip()
 
     @property
     def descripcion(self) -> str:
@@ -33,8 +35,9 @@ class Categoria(Base):
 
     @descripcion.setter
     def descripcion(self, valor: str) -> None:
-        # TODO [A] HU-CAT-02: validar texto no vacio -> DatoInvalidoError
-        self.__descripcion = valor
+        if not isinstance(valor, str) or not valor.strip():
+            raise DatoInvalidoError("La descripción de la categoría no puede estar vacía")
+        self.__descripcion = valor.strip()
 
     @property
     def productos(self) -> tuple[Producto, ...]:
