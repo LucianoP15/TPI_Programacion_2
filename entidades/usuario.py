@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from entidades.base import Base
 from enums import Rol
+from excepciones import DatoInvalidoError
 
 if TYPE_CHECKING:
     from entidades.pedido import Pedido
@@ -37,8 +38,11 @@ class Usuario(Base):
 
     @nombre.setter
     def nombre(self, valor: str) -> None:
-        # TODO [A] HU-USR-02: validar texto no vacio -> DatoInvalidoError
-        self.__nombre = valor
+        if not isinstance(valor, str) or not valor.strip():
+            raise DatoInvalidoError("El nombre no puede estar vacío")
+        if any(c.isdigit() for c in valor):
+            raise DatoInvalidoError("El nombre no puede contener números")
+        self.__nombre = valor.strip()
 
     @property
     def apellido(self) -> str:
@@ -46,8 +50,11 @@ class Usuario(Base):
 
     @apellido.setter
     def apellido(self, valor: str) -> None:
-        # TODO [A] HU-USR-02: validar texto no vacio -> DatoInvalidoError
-        self.__apellido = valor
+        if not isinstance(valor, str) or not valor.strip():
+            raise DatoInvalidoError("El apellido no puede estar vacío")
+        if any(c.isdigit() for c in valor):
+            raise DatoInvalidoError("El apellido no puede contener números")
+        self.__apellido = valor.strip()
 
     @property
     def mail(self) -> str:
@@ -55,9 +62,20 @@ class Usuario(Base):
 
     @mail.setter
     def mail(self, valor: str) -> None:
-        # TODO [A] HU-USR-02: validar no vacio y formato basico ("@" y ".") -> DatoInvalidoError
-        #          (la unicidad del mail se valida en UsuarioServicio, no aca)
-        self.__mail = valor
+        """La unicidad la valida UsuarioServicio."""
+        self.__mail = Usuario.validar_formato_mail(valor)
+
+    @staticmethod
+    def validar_formato_mail(valor: str) -> str:
+        """Formato nombre@dominio.ext; devuelve el mail en minusculas."""
+        if not isinstance(valor, str) or not valor.strip():
+            raise DatoInvalidoError("El mail no puede estar vacío")
+        mail = valor.strip().lower()
+        local, arroba, dominio = mail.partition("@")
+        nombre_dominio, punto, extension = dominio.rpartition(".")
+        if not (local and arroba and nombre_dominio and punto and extension) or "@" in dominio or " " in mail:
+            raise DatoInvalidoError(f"El mail '{valor.strip()}' no es válido (ejemplo: nombre@dominio.com)")
+        return mail
 
     @property
     def celular(self) -> str:
@@ -69,7 +87,8 @@ class Usuario(Base):
 
     # Sin property de lectura a proposito: solo setter.
     def _set_contrasenia(self, valor: str) -> None:
-        # TODO [A] HU-USR-02: validar no vacia -> DatoInvalidoError
+        if not isinstance(valor, str) or not valor.strip():
+            raise DatoInvalidoError("La contraseña no puede estar vacía")
         self.__contrasenia = valor
 
     contrasenia = property(fset=_set_contrasenia)

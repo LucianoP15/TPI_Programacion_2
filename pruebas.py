@@ -101,12 +101,62 @@ def main() -> None:
 
     seccion("2. Usuarios y login [A]")
     s = nuevo_entorno()
+    admin, juan = s.usuarios.listar_activos()
     probar("Login correcto", lambda: s.usuarios.autenticar("admin@foodstore.com", "admin123"))
-    # TODO [A] agregar casos:
-    #  - contrasenia incorrecta / mail inexistente / usuario eliminado -> CredencialesInvalidasError
-    #  - mail duplicado                                                -> DuplicadoError
-    #  - mail sin "@" o "."                                            -> DatoInvalidoError
-    #  - admin que se elimina a si mismo                               -> OperacionNoPermitidaError
+    probar("Login con mail en mayusculas", lambda: s.usuarios.autenticar("  ADMIN@FoodStore.com ", "admin123"))
+    probar("Contraseña incorrecta", lambda: s.usuarios.autenticar("admin@foodstore.com", "otra"), CredencialesInvalidasError)
+    probar("Mail inexistente", lambda: s.usuarios.autenticar("nadie@foodstore.com", "admin123"), CredencialesInvalidasError)
+    probar(
+        "Crear usuario valido",
+        lambda: s.usuarios.crear("Maria", "Lopez", "maria@foodstore.com", "261", "clave", Rol.USUARIO),
+    )
+    probar(
+        "Mail duplicado (otra capitalizacion)",
+        lambda: s.usuarios.crear("Otro", "Juan", "JUAN@foodstore.com", "261", "clave", Rol.USUARIO),
+        DuplicadoError,
+    )
+    probar(
+        "Mail sin @",
+        lambda: s.usuarios.crear("Pepe", "Paz", "pepe.foodstore.com", "261", "clave", Rol.USUARIO),
+        DatoInvalidoError,
+    )
+    probar(
+        "Mail sin punto en el dominio",
+        lambda: s.usuarios.crear("Pepe", "Paz", "pepe@foodstore", "261", "clave", Rol.USUARIO),
+        DatoInvalidoError,
+    )
+    probar(
+        "Nombre vacio",
+        lambda: s.usuarios.crear("   ", "Paz", "pepe@foodstore.com", "261", "clave", Rol.USUARIO),
+        DatoInvalidoError,
+    )
+    probar(
+        "Apellido con numeros",
+        lambda: s.usuarios.crear("Pepe", "Paz2", "pepe@foodstore.com", "261", "clave", Rol.USUARIO),
+        DatoInvalidoError,
+    )
+    probar(
+        "Contraseña vacia",
+        lambda: s.usuarios.crear("Pepe", "Paz", "pepe@foodstore.com", "261", "  ", Rol.USUARIO),
+        DatoInvalidoError,
+    )
+    probar("Editar conservando valores (None)", lambda: afirmar(s.usuarios.editar(juan.id).mail == "juan@foodstore.com"))
+    probar("Editar celular", lambda: afirmar(s.usuarios.editar(juan.id, celular="2619999999").celular == "2619999999"))
+    probar("Editar a un mail ajeno", lambda: s.usuarios.editar(juan.id, mail="admin@foodstore.com"), DuplicadoError)
+    probar("Editar id inexistente", lambda: s.usuarios.editar(999, nombre="X"), EntidadNoEncontradaError)
+    probar(
+        "Admin se cambia su propio rol",
+        lambda: s.usuarios.editar(admin.id, rol=Rol.USUARIO, usuario_sesion=admin),
+        OperacionNoPermitidaError,
+    )
+    probar("Admin se elimina a si mismo", lambda: s.usuarios.eliminar(admin.id, admin), OperacionNoPermitidaError)
+    probar("Eliminar otro usuario", lambda: s.usuarios.eliminar(juan.id, admin))
+    probar("Login de usuario eliminado", lambda: s.usuarios.autenticar("juan@foodstore.com", "cliente123"), CredencialesInvalidasError)
+    probar(
+        "Mail de usuario eliminado sigue reservado",
+        lambda: s.usuarios.crear("Juan", "Nuevo", "juan@foodstore.com", "261", "clave", Rol.USUARIO),
+        DuplicadoError,
+    )
 
     # ==================================================================
     # 2. Integrante B: productos y pedidos
