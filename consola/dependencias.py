@@ -1,8 +1,18 @@
+import os
+
 # Codigos ANSI para colorear la consola sin usar librerias (pueden no estar instaladas).
 AMARILLO = "\033[33m"
 CYAN = "\033[96m"
 RESET = "\033[0m"   # vuelve al color por defecto
 NEGRITA = "\033[1m"
+# Cursor arriba + borrar pantalla + borrar historial de desplazamiento
+BORRAR_TODO = "\033[H\033[2J\033[3J"
+
+
+def limpiar_consola() -> None:
+    """cls/clear no borra el historial en VS Code ni Windows Terminal: la secuencia ANSI si."""
+    os.system("cls" if os.name == "nt" else "clear")
+    print(BORRAR_TODO, end="", flush=True)
 
 
 def verificar_dependencias() -> bool:
