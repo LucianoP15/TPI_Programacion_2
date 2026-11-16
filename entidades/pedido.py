@@ -7,6 +7,7 @@ from entidades.base import Base
 from entidades.calculable import Calculable
 from entidades.detalle_pedido import DetallePedido
 from enums import Estado, FormaPago
+from excepciones import DatoInvalidoError, OperacionNoPermitidaError, StockInsuficienteError
 
 if TYPE_CHECKING:
     from entidades.producto import Producto
@@ -18,7 +19,10 @@ class Pedido(Base, Calculable):
 
     def __init__(self, usuario: Usuario, forma_pago: FormaPago) -> None:
         super().__init__()
-        # TODO [B] HU-PED-02: validar usuario existente y no eliminado -> OperacionNoPermitidaError
+        if usuario is None:
+            raise OperacionNoPermitidaError("El pedido debe tener un usuario")
+        if usuario.eliminado:
+            raise OperacionNoPermitidaError("No se puede crear un pedido para un usuario eliminado")
         self.__usuario: Usuario = usuario
         self.__fecha: date = date.today()
         self.__estado: Estado = Estado.PENDIENTE
@@ -42,6 +46,8 @@ class Pedido(Base, Calculable):
     @estado.setter
     def estado(self, valor: Estado) -> None:
         # Las transiciones validas las controla PedidoServicio.cambiar_estado()
+        if not isinstance(valor, Estado):
+            raise DatoInvalidoError("Estado inválido")
         self.__estado = valor
 
     @property
@@ -50,6 +56,8 @@ class Pedido(Base, Calculable):
 
     @forma_pago.setter
     def forma_pago(self, valor: FormaPago) -> None:
+        if not isinstance(valor, FormaPago):
+            raise DatoInvalidoError("Forma de pago inválida")
         self.__forma_pago = valor
 
     @property
@@ -63,25 +71,40 @@ class Pedido(Base, Calculable):
 
     # ---------------- metodos obligatorios (consigna) ----------------
     def agregar_detalle(self, cantidad: int, producto: Producto) -> None:
-        # TODO [B] HU-PED-02
-        #  - producto no eliminado y disponible
-        #  - cantidad > 0 y (cantidad total del producto en el pedido) <= producto.stock -> StockInsuficienteError
-        #  - si ya hay un detalle de ese producto: sumar la cantidad al existente
-        #  - si no: crear DetallePedido(cantidad, producto) y agregarlo a self.__detalles
-        #  - NO descuenta stock (eso lo hace PedidoServicio cuando el pedido se confirma en la coleccion)
-        raise NotImplementedError("Pedido.agregar_detalle")
+        if producto is None or producto.eliminado:
+            raise OperacionNoPermitidaError("El producto no existe o fue eliminado")
+        if not producto.disponible:
+            raise OperacionNoPermitidaError(f"El producto '{producto.nombre}' no está disponible")
+        if isinstance(cantidad, bool) or not isinstance(cantidad, int) or cantidad <= 0:
+            raise DatoInvalidoError("La cantidad debe ser un número entero mayor a 0")
+        existente = self.buscar_detalle_por_producto(producto)
+        cantidad_total = cantidad + (existente.cantidad if existente else 0)
+        if cantidad_total > producto.stock:
+            raise StockInsuficienteError(
+                f"Stock insuficiente para '{producto.nombre}': "
+                f"pedido {cantidad_total}, disponible {producto.stock}"
+            )
+        if existente:
+            existente.cantidad = cantidad_total
+        else:
+            self.__detalles.append(DetallePedido(cantidad, producto))
+        self.calcular_total()
 
     def buscar_detalle_por_producto(self, producto: Producto) -> DetallePedido | None:
-        # TODO [B] devolver el detalle activo de ese producto o None
-        raise NotImplementedError("Pedido.buscar_detalle_por_producto")
+        for detalle in self.__detalles:
+            if not detalle.eliminado and detalle.producto == producto:
+                return detalle
+        return None
 
     def eliminar_detalle_por_producto(self, producto: Producto) -> None:
-        # TODO [B] baja logica del detalle (detalle.eliminar()) y recalcular total
-        raise NotImplementedError("Pedido.eliminar_detalle_por_producto")
+        detalle = self.buscar_detalle_por_producto(producto)
+        if detalle is None:
+            raise OperacionNoPermitidaError("El pedido no tiene un detalle de ese producto")
+        detalle.eliminar()
+        self.calcular_total()
 
     def calcular_total(self) -> None:
-        # TODO [B] HU-PED-02: self.__total = suma de subtotales de los detalles activos
-        raise NotImplementedError("Pedido.calcular_total")
+        self.__total = sum(d.subtotal for d in self.__detalles if not d.eliminado)
 
     # ---------------- auxiliares ----------------
     def eliminar(self) -> None:
