@@ -13,13 +13,13 @@ Al iniciar se pide mail y contraseña. Según el rol, se abre el **menú de admi
 | Nombre | Legajo | Correo |
 |---|---|---|
 | Luciano Pizarro | 54249 | luciano.pizarro@alumnos.frm.utn.edu.ar |
-| _(completar)_ | | |
+| Lautaro Martínez | _(completar)_ | _(completar)_ |
 
 ## Enlaces del proyecto
 
 | Recurso | Enlace |
 |---|---|
-| Repositorio GitHub | _(completar)_ |
+| Repositorio GitHub | https://github.com/LucianoP15/TPI_Programacion_2 |
 | Video demostración | _(completar)_ |
 | Informe PDF | [informe.pdf](./informe.pdf) |
 
@@ -77,14 +77,13 @@ consola/
   menu.py                   Menu, MenuAdministrador, MenuCliente (polimorfismo)
   pantallas/                Pantallas de cada sección
 requirements.txt            Dependencias del proyecto
-assets/                     Capturas de pantalla para este README
+assets/                     Capturas de pantalla del README y del informe
+INFORME.md                  Borrador del informe (la versión entregada es informe.pdf)
 ```
 
 La dependencia entre capas va en un solo sentido: **consola → servicios → entidades**.
 
 ## Ejemplos de uso
-
-Las capturas deben guardarse en la carpeta `assets/`.
 
 ### Inicio de sesión
 
