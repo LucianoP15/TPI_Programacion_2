@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 from entidades.base import Base
@@ -51,6 +52,8 @@ class Producto(Base):
     def precio(self, valor: float) -> None:
         if isinstance(valor, bool) or not isinstance(valor, (int, float)):
             raise PrecioInvalidoError("El precio debe ser un número")
+        if not math.isfinite(valor):
+            raise PrecioInvalidoError("El precio debe ser un número finito")
         if valor < 0:
             raise PrecioInvalidoError("El precio no puede ser negativo")
         self.__precio = float(valor)
@@ -89,6 +92,8 @@ class Producto(Base):
 
     @disponible.setter
     def disponible(self, valor: bool) -> None:
+        if not isinstance(valor, bool):
+            raise DatoInvalidoError("Disponible debe ser Sí o No")
         self.__disponible = valor
 
     @property

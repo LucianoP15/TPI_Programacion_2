@@ -46,6 +46,8 @@ class Pedido(Base, Calculable):
     @estado.setter
     def estado(self, valor: Estado) -> None:
         # Las transiciones validas las controla PedidoServicio.cambiar_estado()
+        if not isinstance(valor, Estado):
+            raise DatoInvalidoError("Estado inválido")
         self.__estado = valor
 
     @property
@@ -54,6 +56,8 @@ class Pedido(Base, Calculable):
 
     @forma_pago.setter
     def forma_pago(self, valor: FormaPago) -> None:
+        if not isinstance(valor, FormaPago):
+            raise DatoInvalidoError("Forma de pago inválida")
         self.__forma_pago = valor
 
     @property

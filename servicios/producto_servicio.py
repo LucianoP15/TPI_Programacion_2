@@ -1,4 +1,5 @@
 from entidades import Producto
+from excepciones import FoodStoreError
 from servicios.categoria_servicio import CategoriaServicio
 from servicios.servicio_base import ServicioBase
 
@@ -13,12 +14,11 @@ class ProductoServicio(ServicioBase[Producto]):
         self._categorias: CategoriaServicio = categorias
 
     def listar_disponibles(self) -> list[Producto]:
-        # TODO [B] HU-PROD-01: activos, disponible == True y stock > 0
-        raise NotImplementedError("ProductoServicio.listar_disponibles")
+        return [p for p in self.listar_activos() if p.disponible and p.stock > 0]
 
     def listar_por_categoria(self, id_categoria: int) -> list[Producto]:
-        # TODO [B] (opcional) HU-PROD-01: filtrar activos por categoria
-        raise NotImplementedError("ProductoServicio.listar_por_categoria")
+        categoria = self._categorias.buscar_por_id(id_categoria)
+        return [p for p in self.listar_activos() if p.categoria == categoria]
 
     def crear(
         self,
@@ -30,10 +30,9 @@ class ProductoServicio(ServicioBase[Producto]):
         disponible: bool,
         id_categoria: int,
     ) -> Producto:
-        # TODO [B] HU-PROD-02
-        #  - categoria = self._categorias.buscar_por_id(id_categoria)
-        #  - crear Producto (los setters validan), registrar y devolver
-        raise NotImplementedError("ProductoServicio.crear")
+        categoria = self._categorias.buscar_por_id(id_categoria)
+        producto = Producto(nombre, precio, descripcion, stock, imagen, disponible, categoria)
+        return self.registrar(producto)
 
     def editar(
         self,
@@ -46,9 +45,37 @@ class ProductoServicio(ServicioBase[Producto]):
         disponible: bool | None = None,
         id_categoria: int | None = None,
     ) -> Producto:
-        # TODO [B] HU-PROD-03: None = conservar; mismas validaciones que al crear
-        raise NotImplementedError("ProductoServicio.editar")
+        producto = self.buscar_por_id(id_producto)
+        categoria = self._categorias.buscar_por_id(id_categoria) if id_categoria is not None else None
+
+        # Si un dato falla, se restauran los anteriores: la edicion es todo o nada
+        anterior = (
+            producto.nombre, producto.precio, producto.descripcion, producto.stock,
+            producto.imagen, producto.disponible, producto.categoria,
+        )
+        try:
+            if nombre is not None:
+                producto.nombre = nombre
+            if precio is not None:
+                producto.precio = precio
+            if descripcion is not None:
+                producto.descripcion = descripcion
+            if stock is not None:
+                producto.stock = stock
+            if imagen is not None:
+                producto.imagen = imagen
+            if disponible is not None:
+                producto.disponible = disponible
+            if categoria is not None:
+                producto.categoria = categoria
+        except FoodStoreError:
+            (
+                producto.nombre, producto.precio, producto.descripcion, producto.stock,
+                producto.imagen, producto.disponible, producto.categoria,
+            ) = anterior
+            raise
+        return producto
 
     def eliminar(self, id_producto: int) -> None:
-        # TODO [B] HU-PROD-04: baja logica (producto.eliminar())
-        raise NotImplementedError("ProductoServicio.eliminar")
+        producto = self.buscar_por_id(id_producto)
+        producto.eliminar()
