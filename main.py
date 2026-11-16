@@ -1,7 +1,8 @@
-from consola.dependencias import verificar_dependencias
+from consola.dependencias import limpiar_consola, verificar_dependencias
 
 
 def main() -> None:
+    limpiar_consola()
     if not verificar_dependencias():
         return
 

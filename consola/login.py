@@ -1,9 +1,7 @@
-"""Pantalla de inicio de sesion (auxiliar, ya resuelta). La verificacion real es UsuarioServicio.autenticar() [A]."""
+"""Pantalla de inicio de sesion. La verificacion la hace UsuarioServicio.autenticar()."""
 
-import questionary
-
-from consola.entrada import OperacionCancelada, limpiar_consola, pedir_contrasenia, pedir_texto
-from consola.estilos import ESTILO_MENU, console, mensaje_aviso, mensaje_error, mostrar_titulo
+from consola.entrada import OperacionCancelada, limpiar_consola, pedir_contrasenia, pedir_validado
+from consola.estilos import console, mensaje_error, mostrar_titulo
 from entidades import Usuario
 from excepciones import CredencialesInvalidasError
 from servicios import UsuarioServicio
@@ -18,7 +16,7 @@ def iniciar_sesion(usuarios: UsuarioServicio) -> Usuario | None:
 
     for intento in range(1, MAX_INTENTOS_LOGIN + 1):
         try:
-            mail = pedir_texto("📧 Mail: ")
+            mail = pedir_validado("📧 Mail: ", Usuario.validar_formato_mail)
             contrasenia = pedir_contrasenia("🔑 Contraseña: ")
             usuario = usuarios.autenticar(mail or "", contrasenia)
         except CredencialesInvalidasError as e:
@@ -27,9 +25,6 @@ def iniciar_sesion(usuarios: UsuarioServicio) -> Usuario | None:
             continue
         except OperacionCancelada:
             return None
-        except NotImplementedError:
-            # TODO [A] BORRAR este except cuando autenticar() este implementado
-            return _ingreso_modo_desarrollo(usuarios)
 
         console.print(
             f"\n[bold green]Bienvenido/a, {usuario.nombre_completo} "
@@ -41,17 +36,3 @@ def iniciar_sesion(usuarios: UsuarioServicio) -> Usuario | None:
     mensaje_error("Se agotaron los intentos. El programa se cerrara.")
     return None
 
-
-def _ingreso_modo_desarrollo(usuarios: UsuarioServicio) -> Usuario | None:
-    """Solo para poder navegar los menus mientras autenticar() no existe."""
-    mensaje_aviso("UsuarioServicio.autenticar() todavia no esta implementado.")
-    console.print("[dim]Modo desarrollo: elegi con que usuario entrar.[/dim]\n")
-    activos = usuarios.listar_activos()
-    if not activos:
-        mensaje_error("No hay usuarios cargados.")
-        return None
-    return questionary.select(
-        "Entrar como:",
-        choices=[questionary.Choice(f"{u.nombre_completo} [{u.rol.name}]", value=u) for u in activos],
-        style=ESTILO_MENU,
-    ).ask()

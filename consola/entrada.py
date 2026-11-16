@@ -1,13 +1,15 @@
 """Lectura validada desde teclado (auxiliar). Ninguna funcion devuelve datos invalidos."""
 
 import getpass
-import os
+from collections.abc import Callable
 from enum import Enum
 from typing import TypeVar
 
 import questionary
 
+from consola.dependencias import limpiar_consola
 from consola.estilos import ESTILO_MENU, console, formatear_numero
+from excepciones import FoodStoreError
 
 E = TypeVar("E", bound=Enum)
 
@@ -20,10 +22,6 @@ class OperacionCancelada(Exception):
 
 
 # ======================= PANTALLA =======================
-def limpiar_consola() -> None:
-    os.system("cls" if os.name == "nt" else "clear")
-
-
 def pausar() -> None:
     input("\nPresione Enter para continuar...")
 
@@ -61,6 +59,21 @@ def pedir_texto(mensaje: str, opcional: bool = False) -> str | None:
         if opcional:
             return None
         _error("El campo no puede estar vacio.")
+        intentos = _manejar_max_intentos(intentos)
+
+
+def pedir_validado(mensaje: str, validar: Callable[[str], object], opcional: bool = False) -> str | None:
+    """Repite la pregunta mientras validar() lance FoodStoreError. Con opcional=True, Enter devuelve None."""
+    intentos = 0
+    while True:
+        valor = pedir_texto(mensaje, opcional)
+        if valor is None:
+            return None
+        try:
+            validar(valor)
+            return valor
+        except FoodStoreError as e:
+            _error(e.mensaje)
         intentos = _manejar_max_intentos(intentos)
 
 

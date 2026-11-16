@@ -1,7 +1,8 @@
 """Integrante A - Epica 3: Gestion de usuarios."""
 
-from consola.entrada import confirmar, elegir_enum, pedir_contrasenia, pedir_id, pedir_texto  # noqa: F401
-from consola.estilos import (  # noqa: F401
+from consola.entrada import confirmar, elegir_enum, pedir_contrasenia, pedir_id, pedir_texto, pedir_validado
+from consola.estilos import (
+    console,
     mensaje_aviso,
     mensaje_exito,
     mostrar_ficha_usuario,
@@ -9,44 +10,79 @@ from consola.estilos import (  # noqa: F401
     mostrar_titulo,
 )
 from entidades import Usuario
-from enums import Rol  # noqa: F401
+from enums import Rol
 from servicios import Servicios
 
 
 def listar(servicios: Servicios, sesion: Usuario) -> None:
     """HU-USR-01 (nunca mostrar la contrasenia)."""
     mostrar_titulo("👥 Listado de usuarios")
-    # TODO [A] listar_activos -> mostrar_tabla_usuarios / mensaje_aviso si no hay
-    raise NotImplementedError("HU-USR-01 · Listar usuarios [A]")
+    _mostrar_activos(servicios)
 
 
 def crear(servicios: Servicios, sesion: Usuario) -> None:
-    """HU-USR-02."""
+    """HU-USR-02. El mail se valida (formato y duplicado) apenas se ingresa."""
     mostrar_titulo("➕ Crear usuario")
-    # TODO [A]
-    #  - nombre, apellido, mail, celular (pedir_texto), contrasenia (pedir_contrasenia)
-    #  - rol = elegir_enum("Rol:", Rol)
-    #  - servicios.usuarios.crear(...) y mensaje_exito con el id
-    #  - si el mail ya existe (DuplicadoError) -> volver a pedir el mail (criterio de aceptacion)
-    raise NotImplementedError("HU-USR-02 · Crear usuario [A]")
+    nombre = pedir_texto("Nombre: ")
+    apellido = pedir_texto("Apellido: ")
+    mail = pedir_validado("Mail: ", servicios.usuarios.validar_mail_disponible)
+    celular = pedir_texto("Celular: ")
+    contrasenia = pedir_contrasenia()
+    rol = elegir_enum("Rol:", Rol)
+    usuario = servicios.usuarios.crear(nombre, apellido, mail, celular, contrasenia, rol)
+    mensaje_exito(f"Usuario '{usuario.nombre_completo}' creado con id {usuario.id}.")
 
 
 def editar(servicios: Servicios, sesion: Usuario) -> None:
-    """HU-USR-03."""
+    """HU-USR-03. El propio rol no se ofrece: un admin no puede quitarse permisos."""
     mostrar_titulo("✍️  Editar usuario")
-    # TODO [A] listar, pedir_id, campos opcionales (Enter conserva), elegir_enum(..., opcional=True)
-    raise NotImplementedError("HU-USR-03 · Editar usuario [A]")
+    if not _mostrar_activos(servicios):
+        return
+    usuario = servicios.usuarios.buscar_por_id(pedir_id("\nId del usuario: "))
+    console.print("[dim]Presione Enter para conservar el valor actual.[/dim]\n")
+    nombre = pedir_texto(f"Nombre [{usuario.nombre}]: ", opcional=True)
+    apellido = pedir_texto(f"Apellido [{usuario.apellido}]: ", opcional=True)
+    mail = pedir_validado(
+        f"Mail [{usuario.mail}]: ",
+        lambda valor: servicios.usuarios.validar_mail_disponible(valor, usuario.id),
+        opcional=True,
+    )
+    celular = pedir_texto(f"Celular [{usuario.celular}]: ", opcional=True)
+    contrasenia = pedir_contrasenia("Nueva contraseña: ") if confirmar("¿Cambiar la contraseña?") else None
+    rol = None if usuario == sesion else elegir_enum(f"Rol [{usuario.rol.value}]:", Rol, opcional=True)
+    if all(valor is None for valor in (nombre, apellido, mail, celular, contrasenia, rol)):
+        mensaje_aviso("No se realizaron cambios.")
+        return
+    servicios.usuarios.editar(
+        usuario.id, nombre, apellido, mail, celular, contrasenia, rol, usuario_sesion=sesion
+    )
+    mensaje_exito(f"Usuario '{usuario.nombre_completo}' actualizado.")
 
 
 def eliminar(servicios: Servicios, sesion: Usuario) -> None:
-    """HU-USR-04 (un admin no puede eliminarse a si mismo: pasar `sesion` al servicio)."""
+    """HU-USR-04 (un admin no puede eliminarse a si mismo)."""
     mostrar_titulo("❌ Eliminar usuario")
-    # TODO [A] listar, pedir_id, confirmar, servicios.usuarios.eliminar(id, sesion)
-    raise NotImplementedError("HU-USR-04 · Eliminar usuario [A]")
+    if not _mostrar_activos(servicios):
+        return
+    usuario = servicios.usuarios.buscar_por_id(pedir_id("\nId del usuario: "))
+    if not confirmar(f"¿Confirma eliminar al usuario '{usuario.nombre_completo}'?"):
+        mensaje_aviso("Operacion cancelada.")
+        return
+    servicios.usuarios.eliminar(usuario.id, sesion)
+    mensaje_exito(f"Usuario '{usuario.nombre_completo}' eliminado.")
 
 
 def mis_datos(servicios: Servicios, sesion: Usuario) -> None:
     """HU-USR-05 (cliente)."""
     mostrar_titulo("👤 Mis datos")
-    # TODO [A] mostrar_ficha_usuario(sesion)
-    raise NotImplementedError("HU-USR-05 · Ver mis datos [A]")
+    mostrar_ficha_usuario(sesion)
+
+
+def _mostrar_activos(servicios: Servicios) -> bool:
+    """Muestra la tabla; devuelve False si no hay usuarios para operar."""
+    usuarios = servicios.usuarios.listar_activos()
+    if not usuarios:
+        mensaje_aviso("No hay usuarios cargados.")
+        return False
+    mostrar_tabla_usuarios(usuarios)
+    return True

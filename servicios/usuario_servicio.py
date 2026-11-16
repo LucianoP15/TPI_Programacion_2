@@ -1,5 +1,6 @@
 from entidades import Usuario
 from enums import Rol
+from excepciones import CredencialesInvalidasError, DuplicadoError, OperacionNoPermitidaError
 from servicios.servicio_base import ServicioBase
 
 
@@ -9,12 +10,11 @@ class UsuarioServicio(ServicioBase[Usuario]):
     nombre_entidad = "Usuario"
 
     def autenticar(self, mail: str, contrasenia: str) -> Usuario:
-        # TODO [A] HU-ACC-01
-        #  - buscar el usuario por mail (sin distinguir mayusculas)
-        #  - si no existe, esta eliminado o verificar_contrasenia() da False
-        #    -> raise CredencialesInvalidasError()  (mismo mensaje en los 3 casos)
-        #  - devolver el usuario
-        raise NotImplementedError("UsuarioServicio.autenticar")
+        """Mismo error si el mail no existe, el usuario esta eliminado o la contrasenia no coincide."""
+        usuario = self._buscar_por_mail(mail)
+        if usuario is None or usuario.eliminado or not usuario.verificar_contrasenia(contrasenia):
+            raise CredencialesInvalidasError()
+        return usuario
 
     def crear(
         self,
@@ -25,8 +25,8 @@ class UsuarioServicio(ServicioBase[Usuario]):
         contrasenia: str,
         rol: Rol,
     ) -> Usuario:
-        # TODO [A] HU-USR-02: validar mail unico, crear, registrar y devolver
-        raise NotImplementedError("UsuarioServicio.crear")
+        self.validar_mail_disponible(mail)
+        return self.registrar(Usuario(nombre, apellido, mail, celular, contrasenia, rol))
 
     def editar(
         self,
@@ -37,16 +37,43 @@ class UsuarioServicio(ServicioBase[Usuario]):
         celular: str | None = None,
         contrasenia: str | None = None,
         rol: Rol | None = None,
+        usuario_sesion: Usuario | None = None,
     ) -> Usuario:
-        # TODO [A] HU-USR-03: None = conservar. Si cambia el mail, validar unicidad excluyendo al propio usuario
-        raise NotImplementedError("UsuarioServicio.editar")
+        """None = conservar el valor actual."""
+        usuario = self.buscar_por_id(id_usuario)
+        if rol is not None and rol != usuario.rol and usuario == usuario_sesion:
+            raise OperacionNoPermitidaError("No puede cambiar su propio rol")
+        if mail is not None:
+            self.validar_mail_disponible(mail, excluir_id=usuario.id)
+            usuario.mail = mail
+        if nombre is not None:
+            usuario.nombre = nombre
+        if apellido is not None:
+            usuario.apellido = apellido
+        if celular is not None:
+            usuario.celular = celular
+        if contrasenia is not None:
+            usuario.contrasenia = contrasenia
+        if rol is not None:
+            usuario.rol = rol
+        return usuario
 
     def eliminar(self, id_usuario: int, usuario_sesion: Usuario) -> None:
-        # TODO [A] HU-USR-04
-        #  - si id_usuario == usuario_sesion.id -> OperacionNoPermitidaError
-        #  - si no: usuario.eliminar()
-        raise NotImplementedError("UsuarioServicio.eliminar")
+        if id_usuario == usuario_sesion.id:
+            raise OperacionNoPermitidaError("No puede eliminar su propio usuario")
+        self.buscar_por_id(id_usuario).eliminar()
 
-    def _validar_mail_unico(self, mail: str, excluir_id: int | None = None) -> None:
-        # TODO [A] recorrer la coleccion; si el mail ya existe -> DuplicadoError
-        raise NotImplementedError("UsuarioServicio._validar_mail_unico")
+    def _buscar_por_mail(self, mail: str) -> Usuario | None:
+        """Incluye eliminados: el mail queda reservado aunque el usuario se haya dado de baja."""
+        buscado = mail.strip().lower()
+        for usuario in self._items:
+            if usuario.mail == buscado:
+                return usuario
+        return None
+
+    def validar_mail_disponible(self, mail: str, excluir_id: int | None = None) -> None:
+        """Formato valido y sin otro usuario (incluidos eliminados) que ya lo use."""
+        Usuario.validar_formato_mail(mail)
+        existente = self._buscar_por_mail(mail)
+        if existente is not None and existente.id != excluir_id:
+            raise DuplicadoError(f"Ya existe un usuario con el mail '{existente.mail}'")
