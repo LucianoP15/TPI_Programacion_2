@@ -45,17 +45,26 @@ class UsuarioServicio(ServicioBase[Usuario]):
             raise OperacionNoPermitidaError("No puede cambiar su propio rol")
         if mail is not None:
             self.validar_mail_disponible(mail, excluir_id=usuario.id)
-            usuario.mail = mail
-        if nombre is not None:
-            usuario.nombre = nombre
-        if apellido is not None:
-            usuario.apellido = apellido
-        if celular is not None:
-            usuario.celular = celular
-        if contrasenia is not None:
-            usuario.contrasenia = contrasenia
-        if rol is not None:
-            usuario.rol = rol
+
+        # Si un dato falla, se restauran los anteriores: la edicion es todo o nada
+        anterior = (usuario.mail, usuario.nombre, usuario.apellido, usuario.celular, usuario.rol)
+        try:
+            if mail is not None:
+                usuario.mail = mail
+            if nombre is not None:
+                usuario.nombre = nombre
+            if apellido is not None:
+                usuario.apellido = apellido
+            if celular is not None:
+                usuario.celular = celular
+            if rol is not None:
+                usuario.rol = rol
+            # La contrasenia no se puede leer para restaurarla: va al final, cuando el resto ya es valido
+            if contrasenia is not None:
+                usuario.contrasenia = contrasenia
+        except Exception:
+            usuario.mail, usuario.nombre, usuario.apellido, usuario.celular, usuario.rol = anterior
+            raise
         return usuario
 
     def eliminar(self, id_usuario: int, usuario_sesion: Usuario) -> None:

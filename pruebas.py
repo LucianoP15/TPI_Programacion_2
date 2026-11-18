@@ -152,6 +152,19 @@ def main() -> None:
     probar("Editar a un mail ajeno", lambda: s.usuarios.editar(juan.id, mail="admin@foodstore.com"), DuplicadoError)
     probar("Editar id inexistente", lambda: s.usuarios.editar(999, nombre="X"), EntidadNoEncontradaError)
     probar(
+        "Editar con mail valido + apellido invalido",
+        lambda: s.usuarios.editar(juan.id, mail="juan.nuevo@foodstore.com", apellido="P3rez", contrasenia="nueva"),
+        DatoInvalidoError,
+    )
+    probar("...el mail NO quedo a medias (todo o nada)", lambda: afirmar(juan.mail == "juan@foodstore.com", juan.mail))
+    probar("...la contraseña NO cambio", lambda: afirmar(juan.verificar_contrasenia("cliente123")))
+    probar(
+        "Editar con mail valido + contraseña vacia",
+        lambda: s.usuarios.editar(juan.id, mail="juan.nuevo@foodstore.com", contrasenia="   "),
+        DatoInvalidoError,
+    )
+    probar("...el mail NO quedo a medias", lambda: afirmar(juan.mail == "juan@foodstore.com", juan.mail))
+    probar(
         "Admin se cambia su propio rol",
         lambda: s.usuarios.editar(admin.id, rol=Rol.USUARIO, usuario_sesion=admin),
         OperacionNoPermitidaError,
