@@ -12,7 +12,7 @@
 | Integrante | Legajo |
 |---|---|
 | Luciano Pizarro | 54249 |
-| Lautaro Martínez | _(completar)_ |
+| Lautaro Martínez | 54277 |
 
 Fecha de entrega: 18/11/2026
 
@@ -148,7 +148,9 @@ Al cancelar un pedido se devuelve el stock. Al eliminarlo se devuelve solo si no
 
 ### 3.6 Ediciones "todo o nada"
 
-Al editar un producto se pueden cambiar varios campos a la vez. Si uno es inválido, se restauran los valores anteriores y el producto queda como estaba. Sin esto, un nombre válido con un stock negativo dejaba el nombre cambiado y mostraba igual un error.
+Al editar un producto o un usuario se pueden cambiar varios campos a la vez. Si uno es inválido, se restauran los valores anteriores y el objeto queda como estaba. Sin esto, un nombre válido con un stock negativo dejaba el nombre cambiado y mostraba igual un error.
+
+En el usuario hay un caso especial: la contraseña no tiene getter, así que no se puede guardar para restaurarla. Por eso es lo último que se asigna, cuando todo lo demás ya es válido.
 
 ### 3.7 Inicio de sesión y permisos
 
@@ -170,7 +172,7 @@ La consigna pide usar solo la biblioteca estándar; consultamos con la cátedra 
 
 ### 3.10 Pruebas
 
-`pruebas.py` ejecuta 165 casos sin pasar por el menú y muestra cada uno como OK o FALLA. Cubren casos válidos y de error: precios negativos, `NaN` o infinitos, stock insuficiente, pedidos que fallan a mitad de la carga, transiciones de estado inválidas, cancelaciones que devuelven el stock una sola vez, pedidos ajenos, mails duplicados y login con usuario dado de baja.
+`pruebas.py` ejecuta 170 casos sin pasar por el menú y muestra cada uno como OK o FALLA. Cubren casos válidos y de error: precios negativos, `NaN` o infinitos, stock insuficiente, pedidos que fallan a mitad de la carga, transiciones de estado inválidas, cancelaciones que devuelven el stock una sola vez, pedidos ajenos, mails duplicados y login con usuario dado de baja.
 
 Para comprobar que las pruebas detectaban errores de verdad, introdujimos fallas a propósito en el código: quitamos la restauración al editar, descontamos el stock antes de validar y cancelamos sin devolver el stock. En todos los casos alguna prueba falló.
 
@@ -210,11 +212,19 @@ Para comprobar que las pruebas detectaban errores de verdad, introdujimos fallas
 
 ### Parte A – Lautaro Martínez
 
-_(completar)_
+**Un usuario dado de baja que bloqueaba a uno activo.** Al principio el mail único se controlaba solo contra los usuarios activos. Así se podía crear un usuario nuevo con el mail de uno eliminado. Pero `autenticar()` busca por mail y puede encontrar primero al eliminado, y entonces rechazaba al activo aunque la contraseña fuera correcta. Decidimos controlar el mail contra todos los usuarios, también los dados de baja, y por eso un mail eliminado queda reservado.
+
+**Un administrador que se convertía en cliente.** Ya estaba bloqueado que un administrador se eliminara a sí mismo, pero podía editarse y cambiarse el rol a Cliente. Seguía con el menú de administrador abierto sin serlo. Aplicamos el mismo criterio que con la baja: `editar()` recibe el usuario de la sesión y lanza `OperacionNoPermitidaError` si intenta cambiar su propio rol. En la pantalla de edición, además, el rol directamente no se ofrece cuando uno se edita a sí mismo.
+
+**Errores que aparecían al final del formulario.** En la primera versión, un mail repetido o con formato inválido recién se detectaba al guardar, después de completar todos los campos, y había que empezar de nuevo. Lo mismo pasaba con el nombre de una categoría repetida. Separamos esas validaciones en métodos públicos (`validar_mail_disponible`, `validar_nombre_unico`) y sumamos `pedir_validado()` en la consola, que vuelve a preguntar ese dato en el momento, con el mismo límite de tres intentos.
+
+**Cambiar la contraseña sin obligar a escribirla.** Al editar un usuario, todos los campos se pueden dejar vacíos para conservarlos, pero la contraseña se pide oculta y no tenía esa opción. En lugar de cambiar la función de entrada, que usábamos los dos, antes de pedir la contraseña se pregunta "¿Cambiar la contraseña?".
+
+**Ediciones de usuario a medias.** El mismo problema que en productos apareció al editar usuarios: con un mail válido y un apellido con números, el mail quedaba cambiado. Aplicamos la misma restauración, con un detalle propio: la contraseña no se puede leer, así que se asigna al final, cuando el resto de los datos ya pasó las validaciones (ver 3.6).
 
 ### Integración
 
-Cada uno trabajó en su rama y el único archivo que tocamos los dos fue `pruebas.py`. Antes de unir las ramas probamos el merge en una copia aparte y corrimos las pruebas con las dos partes juntas. Git combinó el archivo sin conflictos y todas las pruebas pasaron. Después unimos cada rama a `main` con su pull request.
+Cada uno trabajó en su rama. Los archivos que tocamos los dos fueron `pruebas.py` y, en la consola, `main.py`, `entrada.py` y `dependencias.py`, donde la parte A agregó `pedir_validado()` y la limpieza de pantalla al iniciar. Antes de unir las ramas probamos el merge en una copia aparte y corrimos las pruebas con las dos partes juntas. Git combinó el archivo sin conflictos y todas las pruebas pasaron. Después unimos cada rama a `main` con su pull request.
 
 ## 6. Bibliografía y webgrafía
 

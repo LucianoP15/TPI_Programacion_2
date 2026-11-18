@@ -13,7 +13,7 @@ Al iniciar se pide mail y contraseña. Según el rol, se abre el **menú de admi
 | Nombre | Legajo | Correo |
 |---|---|---|
 | Luciano Pizarro | 54249 | luciano.pizarro@alumnos.frm.utn.edu.ar |
-| Lautaro Martínez | _(completar)_ | _(completar)_ |
+| Lautaro Martínez | 54277 | lautaroj.martinez@alumnos.frm.utn.edu.ar |
 
 ## Enlaces del proyecto
 
