@@ -247,4 +247,4 @@ Cada uno trabajó en su rama. Los archivos que tocamos los dos fueron `pruebas.p
 | Recurso | Enlace |
 |---|---|
 | Repositorio | https://github.com/LucianoP15/TPI_Programacion_2 |
-| Video demostración | _(completar)_ |
+| Video demostración | https://www.youtube.com/watch?v=7wX0WrGI0ag |

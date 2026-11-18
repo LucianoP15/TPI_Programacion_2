@@ -20,7 +20,7 @@ Al iniciar se pide mail y contraseña. Según el rol, se abre el **menú de admi
 | Recurso | Enlace |
 |---|---|
 | Repositorio GitHub | https://github.com/LucianoP15/TPI_Programacion_2 |
-| Video demostración | _(completar)_ |
+| Video demostración | https://www.youtube.com/watch?v=7wX0WrGI0ag |
 | Informe PDF | [informe.pdf](./informe.pdf) |
 
 ## Requisitos previos
